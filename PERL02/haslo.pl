@@ -4,51 +4,40 @@
 use strict;
 use warnings;
 
-my $file = shift or die "Usage:\n...\n...\n...\n";
+my $PATTERN = " AEIOZSLNCWRYTKMDPJUBGHFVXQ";
+my $ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 
-open my $fh, '<', $file or die "Cannot open $file\n";
-local $/;
+my $target = $ARGV[0] or die "No target file specified\n";
+open my $fh, '<', $target or die $!;
+local $/; 
 my $text = <$fh>;
 close $fh;
 
-my @plain = ('A'..'Z', '_');
+my %counts;
+$counts{$_}++ for split //, $text;
 
-$text =~ s/[^A-Z ]//g;
-$text =~ tr/ /_/;
+my @cipher_sorted = sort { $counts{$b} <=> $counts{$a} } keys %counts;
+my @pattern_sorted = split //, $PATTERN;
 
-my %freq;
-$freq{$_} = 0 for @plain;
-$freq{$_}++ for split //, $text;
-
-my @pl_order_potop = qw(
-    _ A I E O Z N S C L W R Y K D T M P J U B G H F V X Q
-);
-
-my @pl_order_wolodyjowski = qw(
-    _ A E I O Z S L N C W R Y T K M D P J U B G H F V X Q
-);
-
-my @pl_order_default = qw(
-    _ A E O I N R S W Z C T D K L M P U J Y B G H F Q V X
-);
-
-my @pl_order;
-if ($file eq 'enc.txt') {
-    @pl_order = @pl_order_potop;
-}
-elsif ($file eq 'enc2.txt') {
-    @pl_order = @pl_order_wolodyjowski;
-}
-else {
-    @pl_order = @pl_order_default;
+my %cipher_to_plain;
+for my $i (0 .. $#cipher_sorted) {
+    last if $i > $#pattern_sorted;
+    $cipher_to_plain{$cipher_sorted[$i]} = $pattern_sorted[$i];
 }
 
-my @cipher_sorted =
-    sort { $freq{$b} <=> $freq{$a} } @plain;
+my %plain_to_cipher = reverse %cipher_to_plain;
 
-my %f;
-for my $i (0 .. $#plain) {
-    $f{ $pl_order[$i] } = $cipher_sorted[$i];
+my $output = "";
+for my $char (split //, $ALPHABET) {
+    my $found = $plain_to_cipher{$char};
+    
+    if (defined $found) {
+        $output .= ($found eq ' ') ? '_' : $found;
+    }
+    else {
+        $output .= "?";
+    }
 }
 
-print join('', map { $f{$_} } @plain), "\n";
+$output =~ s/ /_/g; 
+print "$output\n";
