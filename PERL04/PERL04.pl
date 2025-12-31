@@ -77,6 +77,7 @@ my $sth = $dbh->prepare($query);
 $sth->execute();
 
 print "Top 4 employees with highest total salaries:\n";
+print "----------------------------------------\n";
 
 while (my $row = $sth->fetchrow_arrayref) {
     print join(" | ", @$row), "\n";
